@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "prod-video-stack"
+version = "0.1.0"
+description = "Production-grade video analysis stack skeleton."
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [{ name = "Ra’ed Haddad" }]
+license = "MIT"
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pre-commit>=3.5",
+    "ruff>=0.6.7",
+    "black>=24.10.0",
+    "isort>=5.13.2,<6",
+    "mypy>=1.11",
+]
+
+[project.scripts]
+check-sync = "tools.check_sync:main"
+
+[tool.setuptools.packages.find]
+include = ["analysis", "capture", "record", "sidecar", "tools"]
+
+[tool.black]
+line-length = 100
+
+[tool.isort]
+profile = "black"
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E","F","I","UP","B","C4","SIM","W","N"]
+ignore = []
+
+[tool.pytest.ini_options]
+addopts = "-q"

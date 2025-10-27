@@ -1,0 +1,6 @@
+* text=auto
+*.sh eol=lf
+*.ps1 eol=crlf
+*.bat eol=crlf
+*.py linguist-language=Python
+*.md linguist-language=Markdown
