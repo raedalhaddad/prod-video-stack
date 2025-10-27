@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 
 __version__ = "0.1.0"
 
+
 def _sample_md() -> str:
     now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     return (
@@ -17,6 +18,7 @@ def _sample_md() -> str:
         "- offset_ms: 12\n"
         "- drift_ppm: 2.3\n"
     )
+
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
@@ -42,6 +44,7 @@ def main(argv: list[str] | None = None) -> int:
 
     parser.print_help()
     return 0
+
 
 if __name__ == "__main__":
     raise SystemExit(main())
