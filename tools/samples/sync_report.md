@@ -1,6 +1,6 @@
 # Sync Report (sample)
 
-Generated: 2025-01-01T00:00:00Z
+Generated: 2025-10-27T22:40:16.553538Z
 
 - video: demo.mp4
 - audio: demo.m4a
