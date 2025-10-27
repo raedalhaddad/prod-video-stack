@@ -1,3 +1,5 @@
+[![CI](https://github.com/raedalhaddad/prod-video-stack/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/raedalhaddad/prod-video-stack/actions/workflows/ci.yml?query=branch%3Amain)
+
 # prod-video-stack
 
 Production-grade video analysis stack **skeleton**. This greenfield repo hosts the modernized capture/record/sidecar toolchain while the legacy app continues to run for stability.
