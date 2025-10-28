@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import json
+import os
+from contextlib import suppress
 from pathlib import Path
 from typing import Optional, TextIO
 
@@ -10,6 +12,13 @@ class SidecarWriter:
     def __init__(self, path: str | Path):
         self.path = Path(path)
         self._fh: Optional[TextIO] = None
+
+    def __enter__(self) -> SidecarWriter:
+        self.open()
+        return self
+
+    def __exit__(self, exc_type, exc, tb) -> None:
+        self.close()
 
     def open(self) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -35,7 +44,11 @@ class SidecarWriter:
             self._fh.flush()
 
     def close(self) -> None:
-        if self._fh:
-            self._fh.flush()
+        if self._fh is not None:
+            with suppress(Exception):
+                self._fh.flush()
+            # Best-effort durability; harmless if underlying file doesn't support fileno()
+            with suppress(Exception):
+                os.fsync(self._fh.fileno())
             self._fh.close()
             self._fh = None

@@ -27,6 +27,12 @@ dev = [
 motion = [
   "opencv-python<5",
 ]
+# Optional future plan for contrib:
+analysis = [
+  "opencv-contrib-python-headless<5",  # server-friendly contrib build
+  # If you need contrib *with* GUI instead, use:
+  # "opencv-contrib-python<5"
+]
 
 [project.scripts]
 check-sync = "tools.check_sync:main"
