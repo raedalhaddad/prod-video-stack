@@ -9,32 +9,32 @@ Production-grade video analysis stack **skeleton**. This greenfield repo hosts t
 ```mermaid
 flowchart LR
   subgraph COMMON["common/"]
-    F["frame.py -> Frame(img, pts_ms, frame_id)"]
+    F["frame.py -> Frame img pts_ms frame_id"]
     T["time.py"]
   end
 
-  CAP["capture/"] -->|Frame (BGR, pts_ms, id)| MOTION["analysis/motion/engine.py"]
-  CAP -->|Frame| DETECT["analysis/detect/detector.py"]
-  CAP -->|segments| REC["record/"]
+  CAP["capture/"] -->|"Frame BGR pts_ms id"| MOTION["analysis/motion/engine.py"]
+  CAP -->|"Frame"| DETECT["analysis/detect/detector.py"]
+  CAP -->|"segments"| REC["record/"]
 
   subgraph MOTION_STACK["analysis/motion/"]
-    MOTION -->|env-gated| LEG["_legacy_engine.py"]:::legacy
+    MOTION -->|"env gated"| LEG["_legacy_engine.py"]:::legacy
     LEG --- U["utils/motion_utils.py"]:::legacy
-    LEG --- CFG["config.py (shim -> RTVA_CONFIG_MODULE)"]:::shim
+    LEG --- CFG["config.py shim -> RTVA_CONFIG_MODULE"]:::shim
   end
 
-  DETECT -->|boxes/classes/scores| SIDEW["sidecar/writer.py"]
-  MOTION -->|motion boxes/metrics| SIDEW
+  DETECT -->|"boxes classes scores"| SIDEW["sidecar/writer.py"]
+  MOTION -->|"motion boxes metrics"| SIDEW
   SIDER["sidecar/reader.py"] --> REC
-  REC -->|finalize/concat/trim| OUT["artifacts"]
+  REC -->|"finalize concat trim"| OUT["artifacts"]
 
-  TOOLS["tools/"] -->|ops checks| CAP
-  TOOLS -->|ops checks| REC
-  TOOLS -->|ops checks| SIDEW
-  NATIVE["native/"] -->|future: C++/Rust svc| CAP
-  INFRA["infra/"] -->|svc files, packaging| CAP
-  INFRA -->|svc files, packaging| REC
-  INFRA -->|svc files, packaging| SIDEW
+  TOOLS["tools/"] -->|"ops checks"| CAP
+  TOOLS -->|"ops checks"| REC
+  TOOLS -->|"ops checks"| SIDEW
+  NATIVE["native/"] -->|"future C++/Rust svc"| CAP
+  INFRA["infra/"] -->|"svc files packaging"| CAP
+  INFRA -->|"svc files packaging"| REC
+  INFRA -->|"svc files packaging"| SIDEW
 
   classDef legacy fill:#fff3e6,stroke:#c77,stroke-width:1px;
   classDef shim fill:#eef5ff,stroke:#77c,stroke-width:1px;
