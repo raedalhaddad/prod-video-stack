@@ -8,7 +8,6 @@ Production-grade video analysis stack **skeleton**. This greenfield repo hosts t
 
 ```mermaid
 flowchart LR
-flowchart LR
   subgraph COMMON[common/]
     F[frame.py → Frame(img, pts_ms, frame_id)]
     T[time.py]
