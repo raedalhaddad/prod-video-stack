@@ -175,20 +175,40 @@ class ShmTransport:
             item = (frame, float(pts_ms), int(fid))
             self._stats.last_frame_age_ms = float(last_age_ms)
 
-            # Enforce explicit capacity; count drops deterministically.
-            # Only increment frames_in when we actually enqueue.
-            if len(self._queue) >= self._queue_max:
-                if self._drop_policy == "drop_new":
-                    # Drop the new frame (don't enqueue).
-                    self._stats.drops += 1
-                else:  # drop_old
+            def _enqueue_or_drop(itm):
+                # Only increment frames_in when we actually enqueue.
+                if len(self._queue) >= self._queue_max:
+                    if self._drop_policy == "drop_new":
+                        self._stats.drops += 1
+                        return
+                    # drop_old
                     self._queue.popleft()
-                    self._queue.append(item)
                     self._stats.drops += 1
+                    self._queue.append(itm)
                     self._stats.frames_in += 1
-            else:
-                self._queue.append(item)
-                self._stats.frames_in += 1
+                else:
+                    self._queue.append(itm)
+                    self._stats.frames_in += 1
+
+            # Enqueue current frame…
+            _enqueue_or_drop(item)
+
+            # …then greedily slurp a few more immediately available frames (no sleeps),
+            # so on fast runners the queue fills and drop policy triggers deterministically.
+            for _ in range(8):  # small cap to avoid unbounded loops
+                nxt = self._ring_reader()
+                if nxt is None:
+                    break
+                slot_bytes2, pts_ns2, fid2, last_age_ms2 = nxt
+                try:
+                    frame2 = self._bytes_to_bgr(slot_bytes2)
+                except Exception:
+                    self._stats.drops += 1
+                    continue
+                pts_ms2 = self.params.base_epoch_ms + (pts_ns2 - self.params.base_pts_ns) / 1e6
+                item2 = (frame2, float(pts_ms2), int(fid2))
+                self._stats.last_frame_age_ms = float(last_age_ms2)
+                _enqueue_or_drop(item2)
             self._stats.update_loop_us((time.perf_counter() - t0) * 1e6)
 
     def start(self) -> None:
