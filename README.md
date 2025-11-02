@@ -50,7 +50,6 @@ pip install -e .[dev]
 
 pre-commit install
 pre-commit run --all-files
-pre-commit run --all-files
 
 pytest
 
