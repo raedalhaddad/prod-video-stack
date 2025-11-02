@@ -24,9 +24,16 @@ dev = [
   "numpy; python_version>='3.10'",
   "pytest-dotenv>=0.5.2",
 ]
+# Runtime deps for the capture/reader path
+reader = [
+  "pywin32>=306; platform_system=='Windows'",
+  "requests>=2.32.0",
+]
+
 motion = [
   "opencv-python<5",
 ]
+
 # Optional future plan for contrib:
 analysis = [
   "opencv-contrib-python-headless<5",  # server-friendly contrib build
@@ -51,8 +58,10 @@ line-length = 100
 target-version = "py39"
 
 [tool.ruff.lint]
-select = ["E","F","I","UP","B","C4","SIM","W","N"]
-ignore = []
+# Drop 'UP' (pyupgrade) for py39 to avoid unknown-rule errors on older ruff hooks.
+select = ["E","F","I","B","C4","SIM","W","N"]
+ignore = ["E501"]                       # line length handled by Black
+per-file-ignores = { "tools/*.py" = ["T201"] }  # allow print in CLI tools
 
 [tool.pytest.ini_options]
 addopts = "-q"
