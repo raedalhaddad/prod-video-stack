@@ -106,7 +106,9 @@ class ShmTransport:
     ) -> None:
         self.params = params
         self._ring_reader = ring_reader
-        self._queue: Deque[Tuple[np.ndarray, float, int]] = deque(maxlen=queue_max)
+        # Manage capacity explicitly so we can implement drop policies deterministically.
+        self._queue: Deque[Tuple[np.ndarray, float, int]] = deque()
+        self._queue_max = int(max(1, queue_max))
         self._drop_policy = drop_policy
         self._run_ev = threading.Event()
         self._thr: Optional[threading.Thread] = None
@@ -171,19 +173,22 @@ class ShmTransport:
                 continue
             pts_ms = self.params.base_epoch_ms + (pts_ns - self.params.base_pts_ns) / 1e6
             item = (frame, float(pts_ms), int(fid))
-            self._stats.frames_in += 1
             self._stats.last_frame_age_ms = float(last_age_ms)
-            if len(self._queue) == self._queue.maxlen:
-                # bounded queue: apply drop policy
-                self._stats.drops += 1
+
+            # Enforce explicit capacity; count drops deterministically.
+            # Only increment frames_in when we actually enqueue.
+            if len(self._queue) >= self._queue_max:
                 if self._drop_policy == "drop_new":
-                    # drop the new frame (do nothing)
-                    pass
+                    # Drop the new frame (don't enqueue).
+                    self._stats.drops += 1
                 else:  # drop_old
                     self._queue.popleft()
                     self._queue.append(item)
+                    self._stats.drops += 1
+                    self._stats.frames_in += 1
             else:
                 self._queue.append(item)
+                self._stats.frames_in += 1
             self._stats.update_loop_us((time.perf_counter() - t0) * 1e6)
 
     def start(self) -> None:
