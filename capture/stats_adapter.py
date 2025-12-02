@@ -23,12 +23,19 @@ PtsMapper = Callable[[float], float]
 
 @dataclass
 class ReaderStats:
+    """Lightweight statistics exposed by FrameStream.stats()."""
+
+    # counters
     frames_in: int = 0
     frames_out: int = 0
     drops: int = 0
+    # freshness
     last_frame_age_ms: float = 0.0
+    # loop timing (~microseconds)
     read_loop_us_mean: float = 0.0
     read_loop_us_p95: float = 0.0
+    # learned producer→consumer skew (ms); 0.0 if no correction applied
+    skew_ms: float = 0.0
     _loop_us_hist: deque = field(default_factory=lambda: deque(maxlen=1000), repr=False)
 
     def update_loop_us(self, dt_us: float) -> None:
@@ -45,6 +52,7 @@ def _default_pts_mapper(x: float) -> float:
 
 
 def _extract_timebase(data: dict):
+    """Extract (base_epoch_ms, base_pts, units) from a /health-style payload."""
     tb = data.get("timebase") or data
     be = float(tb["base_epoch_ms"])
     bp = float(tb.get("base_pts_ns", tb.get("base_pts")))
@@ -52,15 +60,12 @@ def _extract_timebase(data: dict):
     return be, bp, units
 
 
-def make_pts_mapper_from_health(health_url: str, timeout_s: float = 1.0):
-    try:
-        with urlopen(health_url, timeout=timeout_s) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-        base_epoch_ms, base_pts, units = _extract_timebase(data)
-    except Exception:
-        # identity fallback; age may be meaningless
-        return lambda x: float(x)
+def _build_pts_mapper(base_epoch_ms: float, base_pts: float, units: str) -> "PtsMapper":
+    """Internal helper that returns a pts→epoch-ms mapping function.
 
+    The returned function is marked with ``_authoritative = True`` and a human-readable
+    ``_desc`` attribute for diagnostics.
+    """
     unit_scale_ms = {
         "ns": 1e-6,
         "us": 1e-3,
@@ -72,26 +77,61 @@ def make_pts_mapper_from_health(health_url: str, timeout_s: float = 1.0):
     if unit_scale_ms is None:
 
         def fn(x: float) -> float:
-            return float(x)  # already epoch-ms
+            # already epoch-ms
+            return float(x)
 
     elif unit_scale_ms == "sec":
 
         def fn(x: float) -> float:
-            return float(x) * 1000.0  # epoch seconds → ms
+            # epoch seconds → ms
+            return float(x) * 1000.0
 
     else:
         sc = float(unit_scale_ms)
 
-        def fn(x: float, be: float = base_epoch_ms, bp: float = base_pts, sc: float = sc) -> float:
+        def fn(
+            x: float,
+            be: float = base_epoch_ms,
+            bp: float = base_pts,
+            sc: float = sc,
+        ) -> float:
+            # generic base-epoch + scaled offset
             return be + (float(x) - bp) * sc
 
-    # mark authoritative
+    # mark authoritative for downstream stats adapters
     try:
-        fn._authoritative = True
-        fn._desc = f"{units} base_epoch_ms={base_epoch_ms:.0f} base_pts={base_pts:.0f}"
+        fn._authoritative = True  # type: ignore[attr-defined]
+        fn._desc = (
+            f"{units} base_epoch_ms={base_epoch_ms:.0f} base_pts={base_pts:.0f}"
+        )  # type: ignore[attr-defined]
     except Exception:
         pass
     return fn
+
+
+def make_pts_mapper_from_health_payload(data: dict) -> "PtsMapper":
+    """Build a pts→epoch-ms mapper from an in-memory /health payload.
+
+    Accepts either the full /health document or just its ``\"timebase\"`` sub-dict.
+    Falls back to an identity mapper if the payload is missing the required fields.
+    """
+    try:
+        base_epoch_ms, base_pts, units = _extract_timebase(data)
+    except Exception:
+        # identity fallback; age may be meaningless
+        return _default_pts_mapper
+    return _build_pts_mapper(base_epoch_ms, base_pts, units)
+
+
+def make_pts_mapper_from_health(health_url: str, timeout_s: float = 1.0) -> "PtsMapper":
+    """Fetch /health from ``health_url`` and return a pts→epoch-ms mapper."""
+    try:
+        with urlopen(health_url, timeout=timeout_s) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+    except Exception:
+        # identity fallback; age may be meaningless
+        return _default_pts_mapper
+    return make_pts_mapper_from_health_payload(data)
 
 
 class WithStats:

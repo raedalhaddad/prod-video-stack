@@ -240,6 +240,26 @@ class ShmTransport:
 
 @dataclass
 class ReaderConfig:
+    """Minimal configuration for building a FrameStream backed by the native SHM ring.
+
+    prefer:
+        "shm"  – use the SHM transport (prod/default).
+        "null" – synthetic black frames for tests/dev only.
+    ctrl_pipe:
+        Named pipe used for the control handshake (map_name + timebase).
+        Set to "" to disable the control-pipe step.
+    map_name:
+        Optional SHM mapping name to use when discovery falls back to naming conventions.
+    health_url:
+        URL of the producer /health endpoint used for discovery and PTS→epoch mapping.
+    queue_max:
+        Capacity for the non-blocking adapter queue (frames).
+    drop_policy:
+        "drop_new" or "drop_old" when the queue is full.
+    connect_timeout_ms:
+        Timeout for control-pipe discovery attempts (milliseconds).
+    """
+
     prefer: str = "shm"  # or "null"
     ctrl_pipe: str = r"\\.\pipe\rtva_cam0_ctrl"
     map_name: Optional[str] = None
@@ -252,6 +272,16 @@ class ReaderConfig:
 class ReaderFactory:
     @staticmethod
     def from_config(cfg: ReaderConfig) -> FrameStream:
+        """Build a FrameStream from the given ReaderConfig.
+
+        Discovery order:
+          1) Control-pipe handshake (canonical).
+          2) /health fallback.
+          3) Naming fallback (dev-only best effort).
+
+        When ``cfg.prefer == "null"`` a NullTransport is returned instead of a SHM-backed
+        stream.
+        """
         if cfg.prefer == "null":
             return NullTransport()
         # 1) Control-pipe handshake (canonical)
@@ -260,7 +290,7 @@ class ReaderFactory:
             # 2) /health fallback
             meta = _try_fetch_health(cfg.health_url)
         if meta is None:
-            # 3) Naming fallback
+            # 3) Naming fallback (dev-only; avoid in production if discovery fails)
             meta = {
                 "map_name": cfg.map_name or "Local\\rtva_cam0",
                 "width": 1920,
@@ -270,6 +300,7 @@ class ReaderFactory:
                 "ring_slots": 3,
                 "base_epoch_ms": time.time() * 1000.0,
                 "base_pts_ns": 0,
+                "pts_units": "ns",
             }
         # pick a sane default stride if not provided: 4 bytes for *x/alpha formats, else 3
         fmt = str(meta.get("format", "BGRx"))
