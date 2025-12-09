@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.9"
 authors = [{ name = "Ra’ed Haddad" }]
 license = "MIT"
-dependencies = []
+dependencies = ["requests>=2.31.0",]
 
 [project.optional-dependencies]
 dev = [
