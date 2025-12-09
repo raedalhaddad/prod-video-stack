@@ -24,3 +24,9 @@ logs/
 *.log
 docs/diagrams/*.png
 docs/diagrams/*.svg
+
+# Local runtime config (not tracked)
+config.py
+
+# Local test scripts
+script.py
