@@ -58,3 +58,8 @@ python -m tools.check_sync sample -o tools\samples\sync_report.md
 ```
 
 > **Note:** Do **not** run `pre-commit autoupdate` while on Python 3.9 for the isort repo. Hooks are pinned to Py3.9-safe versions.
+
+## Documentation
+
+- **Reader & discovery (Phase 1)** — non-blocking reader over the native producer’s SHM ring and `/health.timebase` mapping: see `docs/README_Reader.md`.
+- **Segment-based recorder (Phase 2)** — client-side recorder that drives the native producer’s `/clip` endpoint to build trimmed clips from existing segments: see `docs/README_Recorder.md`.
