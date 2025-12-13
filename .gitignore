@@ -30,3 +30,13 @@ config.py
 
 # Local test scripts
 script.py
+
+# Sidecars / runtime JSONL
+*_motion_events.jsonl
+*_motion_motion.jsonl
+*_objects.jsonl
+*_actions.jsonl
+*_retrieval.jsonl
+*_perf.jsonl
+*_armed_events.jsonl
+*_wind_events.jsonl
