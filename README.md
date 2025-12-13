@@ -63,3 +63,4 @@ python -m tools.check_sync sample -o tools\samples\sync_report.md
 
 - **Reader & discovery (Phase 1)** — non-blocking reader over the native producer’s SHM ring and `/health.timebase` mapping: see `docs/README_Reader.md`.
 - **Segment-based recorder (Phase 2)** — client-side recorder that drives the native producer’s `/clip` endpoint to build trimmed clips from existing segments: see `docs/README_Recorder.md`.
+- **Motion analysis & motion-gated recording (Phase 3)** — per-frame motion engine, motion event builder, motion-gated `/clip` integration, and motion event sidecar: see `docs/README_Motion.md`.
